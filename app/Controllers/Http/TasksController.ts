@@ -7,6 +7,7 @@ export default class TasksController {
   }
 
   public async store({ request, response }: HttpContextContract) {
+    // To add validation schema
     const body = request.body()
     const task = await Task.create(body)
     response.status(201)
@@ -17,10 +18,19 @@ export default class TasksController {
     return await Task.findOrFail(params.id)
   }
 
-  public async update({ params, request, response }: HttpContextContract) {
+  public async update({ params, request }: HttpContextContract) {
     const body = request.body()
     const task = await Task.findOrFail(params.id)
     task.name = body.name
     task.completed = body.completed
+
+    return task.save()
+  }
+
+  public async destroy({ params, response }: HttpContextContract) {
+    const task = await Task.findOrFail(params.id)
+
+    await task.delete()
+    response.status(204)
   }
 }
