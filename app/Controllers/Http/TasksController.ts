@@ -1,5 +1,6 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Task from 'App/Models/Task'
+import { schema } from '@ioc:Adonis/Core/Validator'
 
 export default class TasksController {
   public async index() {
@@ -7,11 +8,16 @@ export default class TasksController {
   }
 
   public async store({ request, response }: HttpContextContract) {
-    // To add validation schema
-    const body = request.body()
-    const task = await Task.create(body)
-    response.status(201)
-    return task
+    //  validation schema
+    const newTaskSchema = schema.create({
+      name: schema.string(),
+      completed: schema.boolean(),
+    })
+
+    const payload = await request.validate({ schema: newTaskSchema })
+    const task = await Task.create(payload)
+
+    return response.status(201).json({ task })
   }
 
   public async show({ params }: HttpContextContract) {
@@ -19,18 +25,21 @@ export default class TasksController {
   }
 
   public async update({ params, request }: HttpContextContract) {
-    const body = request.body()
-    const task = await Task.findOrFail(params.id)
-    task.name = body.name
-    task.completed = body.completed
+    const updateTaskSchema = schema.create({
+      name: schema.string.optional(),
+      completed: schema.boolean.optional(),
+    })
 
-    return task.save()
+    const task = await Task.findOrFail(params.id)
+    const payload = await request.validate({ schema: updateTaskSchema })
+
+    task.merge(payload)
+    return await task.save()
   }
 
   public async destroy({ params, response }: HttpContextContract) {
     const task = await Task.findOrFail(params.id)
-
     await task.delete()
-    response.status(204)
+    return response.status(204)
   }
 }
